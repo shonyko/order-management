@@ -1,0 +1,110 @@
+.dark-edition .form-control:read-only, .form-control:disabled, .form-control[readonly] {
+        background-color:initial;
+}
+
+.dark-edition .form-control[disabled] {
+    cursor: default;
+    border-bottom: 1px solid #d2d2d2;
+}
+
+.dark-edition button.close span {
+    text-shadow: 0 1px 0 rgba(204, 204, 204, 0.15);
+}
+
+.dark-edition .modal-content, .dark-edition .modal-footer {
+    background-color: #202940;
+    color: #8b92a9;
+}
+
+.dark-edition .modal-header {
+    border-bottom: 0px solid rgba(180, 180, 180, 0);
+    background-color: #1a2035;
+    color: #ECF0F1;
+}
+
+.dark-edition .modal-footer {
+    border-top: 0px solid rgba(180, 180, 180, 0);
+}
+
+.dark-edition select option, .dark-edition select optgroup {
+    background-color: #202940;
+}
+
+button:focus, .btn:focus {
+    outline: 0;
+}
+
+.dropdown-menu:before {
+    display: inline-block;
+    position: absolute;
+    width: 0;
+    height: 0;
+    vertical-align: middle;
+    content: "";
+    top: -5px;
+    left: 10px;
+    right: auto;
+    color: #fff;
+    border-bottom: .4em solid;
+    border-right: .4em solid transparent;
+    border-left: .4em solid transparent;
+}
+
+.dropdown-menu.dropdown-menu-right:before {
+    top: -5px;
+    left: auto;
+    right: 20px;
+}
+
+.dropdown-menu.dropdown-black {
+    background: linear-gradient(180deg,#222a42 0,#1d253b);
+    border: 1px solid #344675;
+}
+
+.dropdown-menu.dropdown-black:before {
+    color: #222a42;
+    z-index: 2;
+}
+
+.dropdown-menu.dropdown-black:after {
+    z-index: 1;
+    color: #344675;
+    border-bottom: .4em solid;
+    border-right: .4em solid transparent;
+    border-left: .4em solid transparent;
+}
+
+@media only screen and (max-width: 991px) {
+    .dropdown-toggle::after,
+    .show .dropdown-toggle::after {
+        position: absolute;
+        right: 15px;
+        top: 23px;
+    }
+}
+
+.bootstrap-datetimepicker-widget .datepicker-days .table>thead>tr>th,
+.bootstrap-datetimepicker-widget .datepicker-days .table>tbody>tr>th,
+.bootstrap-datetimepicker-widget .datepicker-days .table>tfoot>tr>th,
+.bootstrap-datetimepicker-widget .datepicker-days .table>thead>tr>td,
+.bootstrap-datetimepicker-widget .datepicker-days .table>tbody>tr>td,
+.bootstrap-datetimepicker-widget .datepicker-days .table>tfoot>tr>td {
+    border-color: #ddd;
+    color: #212529;
+    padding: 0.3rem;
+}
+
+.bootstrap-datetimepicker-widget table td.active, .bootstrap-datetimepicker-widget table td.active:hover {
+    background-color: #9c27b0;
+}
+
+.bootstrap-datetimepicker-widget a span {
+    color: #9c27b0;
+}
+
+@media (min-width: 768px) {
+  .modal-xl {
+    width: 90%;
+    max-width:1200px;
+  }
+}

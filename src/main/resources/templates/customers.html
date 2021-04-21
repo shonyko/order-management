@@ -1,0 +1,230 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+  <div th:fragment="content(args)" th:remove="tag">
+<!--    <div id="data" th:data-args="${args}"></div>-->
+    <div class="container-fluid">
+      <div id="modal"> </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header card-header-primary">
+              <h4 class="card-title ">Customers</h4>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-12">
+                  <table id="myDataTable" class="table w-100"></table>
+                </div>
+              </div>
+
+<!--              <div class="row">-->
+<!--                <label>Date and time</label>-->
+<!--                <input type="text" class="form-control datetimepicker-input" id="datetimepicker1" data-toggle="datetimepicker" data-target="#datetimepicker1" />-->
+<!--              </div>-->
+<!--              <script>-->
+<!--                $(function () {-->
+<!--                  $('#datetimepicker1').datetimepicker({-->
+<!--                    format: 'DD/MM/YYYY HH:mm'-->
+<!--                  });-->
+<!--                });-->
+<!--              </script>-->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+        $(document).ready(function() {
+          const columns = JSON.parse(/*[[${args}]]*/);
+          const $table = $('#myDataTable');
+          const table = $table.DataTable({
+            "pageLength": 15,
+            "lengthChange": false,
+            "searching": false,
+            "select": true,
+            "ajax": {
+              url: "/api/customer",
+              type: "GET",
+              dataSrc: function (json) {
+                if(!json.success) {
+                  showNotification(json);
+                }
+
+                return json.data;
+              }
+            },
+            "columns": columns,
+            dom: "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+            buttons: [
+              "btnCopy", "btnExcel", "btnPDF", "btnPrint"
+            ]
+          });
+
+          table.on( 'select.dt deselect.dt draw.dt', function ( e, dt, type, indexes ) {
+            table.buttons( 1, ['.edit', '.delete'] ).enable(
+                    table.rows( { selected: true } ).indexes().length === 0 ? false : true );
+          } );
+
+          new $.fn.dataTable.Buttons( table, {
+            buttons: [
+              { text: "Add", className: "btn btn-primary", action: function(e, dt, node, action) {getAddForm(dt);} },
+              { text: "Edit", className: "btn btn-primary ml-1 edit", action: function(e, dt, node, action) {getUpdateForm(dt);}, attr: {disabled: true} },
+              { text: "Delete", className: "btn btn-primary ml-1 delete", action: function(e, dt, node, action) {deleteUser(dt);}, attr: {disabled: true} }
+            ]
+          } );
+
+          table.buttons( 1, null ).container().prependTo(
+                  $(table.table().container()).find(".dataTables_crud_buttons")
+          );
+
+          function getUpdateForm(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "GET",
+                url: "/customer/update/" + target['id'],
+                dataType: 'json',
+                success: function(response) {
+                  if(response.redirect) {
+                    window.location.href = response.redirect;
+                    return;
+                  }
+
+                  $("#modal").html(response.data);
+
+                  $("#changeForm").validate({
+                    errorClass: "has-error",
+                    validClass: "has-success",
+                    rules: {
+                      name: {
+                        required: true
+                      },
+                      address: {
+                        required: true
+                      },
+                      email: {
+                        required: true,
+                        email: true
+                      },
+                      age: {
+                        required: true,
+                        digits: true
+                      }
+                    },
+                    highlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                    },
+                    unhighlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                    },
+                    submitHandler: function (form) {
+                      const dataToSend = $("#changeForm").serialize();
+                      $.ajax({
+                        type: "PUT",
+                        url: "/api/customer",
+                        data: dataToSend,
+                        dataType: 'json',
+                        success: (response) => { submitCallback(t, response); },
+                        error: function(xhr, textStatus, errorThrown) {
+                          alert('Error! Status = ' + xhr.status);
+                        }
+                      });
+                      console.log($("#changeForm").serialize());
+                    }
+                  });
+
+                  $("#exampleModal").modal();
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+          function getAddForm(t) {
+            $.ajax({
+              type: "GET",
+              url: "/customer/add",
+              dataType: 'json',
+              success: function(response) {
+                console.log(response);
+                if(response.redirect) {
+                  window.location.href = response.redirect;
+                  return;
+                }
+
+                $("#modal").html(response.data);
+
+                $("#changeForm").validate({
+                  errorClass: "has-error",
+                  validClass: "has-success",
+                  rules: {
+                    name: {
+                      required: true
+                    },
+                    address: {
+                      required: true
+                    },
+                    email: {
+                      required: true
+                    },
+                    age: {
+                      required: true,
+                      digits: true
+                    }
+                  },
+                  highlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                  },
+                  unhighlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                  },
+                  submitHandler: function (form) {
+                    const dataToSend = $("#changeForm").serialize();
+                    $.ajax({
+                      type: "POST",
+                      url: "/api/customer",
+                      data: dataToSend,
+                      dataType: 'json',
+                      success: (response) => { submitCallback(t, response); },
+                      error: function(xhr, textStatus, errorThrown) {
+                        alert('Error! Status = ' + xhr.status);
+                      }
+                    });
+                    console.log($("#changeForm").serialize());
+                  }
+                });
+
+                $("#exampleModal").modal();
+              },
+              error: function(xhr, textStatus, errorThrown) {
+                alert('Error! Status = ' + xhr.status);
+              }
+            });
+
+          }
+          function deleteUser(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "DELETE",
+                url: "/api/customer/" + target['id'],
+                dataType: 'json',
+                success: (response) => { submitCallback(t, response); },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+        });
+      /*]]>*/
+    </script>
+  </div>
+</html>

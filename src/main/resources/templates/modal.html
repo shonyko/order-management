@@ -1,0 +1,94 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:remove="tag">
+  <!-- Modal -->
+  <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">
+            <!--/*@thymesVar id="title" type="java.lang.String"*/-->
+            <th:block th:text="${title}"/>
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="changeForm" autocomplete="off">
+          <div class="modal-body">
+            <th:block th:each="field : ${fields}">
+                  <th:block th:if="${field.type == 'SIMPLE'}">
+                    <div class="form-group mb-3" th:hidden="${field.hidden}">
+                      <label class="bmd-label-floating"><th:block th:text="${field.label}"/></label>
+                      <input th:name="${field.name}" type="text" class="form-control" th:value="${field.value}" th:readonly="${field.readonly==true}">
+                    </div>
+                  </th:block>
+
+                  <th:block th:if="${field.type == 'SELECT'}">
+                    <div class="form-group mb-3" th:hidden="${field.hidden}">
+                      <label class="bmd-label-floating"><th:block th:text="${field.label}"/></label>
+                      <select th:name="${field.name}" id="select2-mySelect420MLG" class="form-control" th:data-url="${field.url}" th:data-value="${field.value}" th:readonly="${field.readonly==true}"></select>
+                      <script type="text/javascript">
+                        $(document).ready(function() {
+                          const select = document.getElementById("select2-mySelect420MLG");
+                          const selectObj = $('#select2-mySelect420MLG');
+                          const url = selectObj.data('url');
+                          const value = selectObj.data('value');
+                          $.ajax({
+                            type: "GET",
+                            url: url,
+                            dataType: 'json',
+                            success: (response) => {
+                              response.data.forEach((item) => {
+                                const defaultValue = item.id == value;
+                                let text = "test";
+
+                                if(response.product) {
+                                  text = item.name + " (Max. " + item.quantity + " )";
+                                }
+                                if(response.customer) {
+                                  text = item.name + " (Id: " + item.id + " )";
+                                }
+
+                                select.options[select.options.length] = new Option(text, item.id, defaultValue, defaultValue);
+                              });
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                              alert('Error! Status = ' + xhr.status);
+                            }
+                          });
+                        });
+                      </script>
+                    </div>
+                  </th:block>
+
+                  <th:block th:if="${field.type == 'DATETIME'}">
+                    <div class="form-group mb-3" th:hidden="${field.hidden}">
+                      <label class="bmd-label-floating"><th:block th:text="${field.label}"/></label>
+                      <input type="text" th:name="${field.name}" class="form-control datetimepicker-input" id="datetimepicker1" data-toggle="datetimepicker" data-target="#datetimepicker1" th:data-value="${field.value}"/>
+                    </div>
+                    <script type="text/javascript">
+                      $(function () {
+                        $('#exampleModal').on('shown.bs.modal', function () {
+                          const obj = $('#datetimepicker1');
+                          const value = obj.data('value');
+                          obj.datetimepicker({
+                            defaultDate: value,//moment().add(1, 'days').set({hour:8,minute:0,second:0,millisecond:0}),
+                            // minDate: moment().add(1, 'days').startOf('day'),
+                            format: "MM/DD/YYYY hh:mm a"
+                          });
+                        });
+                      });
+                    </script>
+                  </th:block>
+            </th:block>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary mr-2">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</html>

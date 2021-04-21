@@ -1,0 +1,101 @@
+<!doctype html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <title>Hello, world!</title>
+
+  <th:block th:replace="fragments::css"/>
+  <th:block th:replace="fragments::js"/>
+</head>
+
+<body class="dark-edition">
+<div class="wrapper">
+  <th:block th:replace="fragments::sidebar"/>
+
+  <div class="main-panel">
+    <th:block th:replace="fragments::navbar"/>
+    <!--/*@thymesVar id="view" type="java.lang.String"*/-->
+    <!--/*@thymesVar id="args" type="java.lang.System"*/-->
+    <div id="content" class="content" th:insert="${view}::content(args=${args})"></div>
+    <th:block th:replace="fragments::footer"/>
+  </div>
+</div>
+
+
+<script>
+  function myFunction() {
+    console.log('haha');
+  }
+
+  function doStuff(e, url) {
+    if($(e.target).hasClass("active")) return;
+    $('#sidebar').find('.active').removeClass("active");
+    $(e.target).closest("li").addClass("active");
+
+    doMoreStuff(url);
+  }
+
+  function doMoreStuff(url) {
+    $.ajax({
+      type: "GET",
+      url: url,
+      dataType: 'json',
+      success: function(response) {
+        if(response.redirect) {
+          window.location.href = response.redirect;
+          return;
+        }
+
+        $("#content").html(response.data);
+      },
+      error: function(xhr, textStatus, errorThrown) {
+        alert('Error! Status = ' + xhr.status);
+      }
+    });
+  }
+
+  function showNotification(response) {
+    response.type = response.success ? "success" : "danger";
+
+    let icon = "check_circle";
+    if(response.type === "danger") {
+      icon = "cancel";
+    }
+
+    $.notify({
+      icon: icon,
+      message: response.message
+
+    },{
+      type: response.type,
+      timer: 3000,
+      placement: {
+        from: "bottom",
+        align: "right"
+      }
+    });
+  }
+
+  function submitCallback(table, response, callback) {
+    if(response.redirect) {
+      window.location.href = response.redirect;
+      return;
+    }
+
+    if(response.success == true) {
+      table.ajax.reload();
+    }
+
+    if(callback) {
+      callback();
+    }
+
+    $("#exampleModal").modal('hide');
+
+    showNotification(response);
+  }
+</script>
+</body>
+
+</html>

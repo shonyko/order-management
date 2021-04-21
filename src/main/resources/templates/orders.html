@@ -1,0 +1,417 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+  <div th:fragment="content(args)" th:remove="tag">
+    <div class="container-fluid">
+      <div id="modal"> </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header card-header-primary">
+              <h4 class="card-title ">Orders</h4>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-12">
+                  <table id="ordersTable" class="table w-100"></table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="hidden-container" hidden="true">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header card-header-primary">
+              <h4 class="card-title ">Order Items</h4>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-12">
+                  <table id="orderItemsTable" class="table w-100"></table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+        $(document).ready(function() {
+          let columns = JSON.parse(/*[[${args}]]*/);
+          const $orders = $('#ordersTable');
+          const ordersTable = $orders.DataTable({
+            "pageLength": 15,
+            "lengthChange": false,
+            "searching": false,
+            "select": true,
+            "rowId" : 'id',
+            "ajax": {
+              url: "/api/order",
+              type: "GET",
+              dataSrc: function (json) {
+                return json.data;
+              }
+            },
+            "columns": columns,
+            dom: "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+            buttons: [
+              "btnCopy", "btnExcel", "btnPDF", "btnPrint"
+            ]
+          });
+
+          ordersTable.on( 'select.dt deselect.dt draw.dt', function ( e, dt, type, indexes ) {
+            const selected = ordersTable.rows( { selected: true } );
+            ordersTable.buttons( 1, ['.edit', '.delete', '.finalize'] ).enable(
+                    selected.indexes().length === 0 ? false : true );
+            $('#hidden-container').attr("hidden", selected.indexes().length === 0);
+            if(selected.indexes().length !== 0) {
+              const target = selected.data()[0];
+              const url = "/api/orderItem/order/" + target['id'];
+              orderItemsTable.ajax.url(url).load();
+            }
+          } );
+
+          new $.fn.dataTable.Buttons( ordersTable, {
+            buttons: [
+              { text: "Add", className: "btn btn-primary", action: function(e, dt, node, action) {getAddForm(dt);} },
+              { text: "Edit", className: "btn btn-primary ml-1 edit", action: function(e, dt, node, action) {getUpdateForm(dt);}, attr: {disabled: true} },
+              { text: "Delete", className: "btn btn-primary ml-1 delete", action: function(e, dt, node, action) {deleteUser(dt);}, attr: {disabled: true} },
+              { text: "Finalize", className: "btn btn-primary ml-1 finalize", action: function(e, dt, node, action) {finalizeOrder(dt);}, attr: {disabled: true} }
+            ]
+          } );
+
+          ordersTable.buttons( 1, null ).container().prependTo(
+                  $(ordersTable.table().container()).find(".dataTables_crud_buttons")
+          );
+
+          function getUpdateForm(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "GET",
+                url: "/order/update/" + target['id'],
+                dataType: 'json',
+                success: function(response) {
+                  if(response.redirect) {
+                    window.location.href = response.redirect;
+                    return;
+                  }
+
+                  $("#modal").html(response.data);
+
+                  $("#changeForm").validate({
+                    errorClass: "has-error",
+                    validClass: "has-success",
+                    rules: {
+                      date: {
+                        required: true
+                      },
+                      customerId: {
+                        required: true,
+                        digits: true
+                      }
+                    },
+                    highlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                    },
+                    unhighlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                    },
+                    submitHandler: function (form) {
+                      const dataToSend = $("#changeForm").serialize();
+                      $.ajax({
+                        type: "PUT",
+                        url: "/api/order",
+                        data: dataToSend,
+                        dataType: 'json',
+                        success: (response) => { submitCallback(t, response); },
+                        error: function(xhr, textStatus, errorThrown) {
+                          alert('Error! Status = ' + xhr.status);
+                        }
+                      });
+                      console.log($("#changeForm").serialize());
+                    }
+                  });
+
+                  $("#exampleModal").modal();
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+          function getAddForm(t) {
+            $.ajax({
+              type: "GET",
+              url: "/order/add",
+              dataType: 'json',
+              success: function(response) {
+                if(response.redirect) {
+                  window.location.href = response.redirect;
+                  return;
+                }
+
+                $("#exampleModal")?.modal('dispose');
+                $("#modal").html(response.data);
+
+                $("#changeForm").validate({
+                  errorClass: "has-error",
+                  validClass: "has-success",
+                  rules: {
+                    date: {
+                      required: true
+                    },
+                    customerId: {
+                      required: true,
+                      digits: true
+                    }
+                  },
+                  highlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                  },
+                  unhighlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                  },
+                  submitHandler: function (form) {
+                    const dataToSend = $("#changeForm").serialize();
+                    $.ajax({
+                      type: "POST",
+                      url: "/api/order",
+                      data: dataToSend,
+                      dataType: 'json',
+                      success: (response) => { submitCallback(t, response); },
+                      error: function(xhr, textStatus, errorThrown) {
+                        alert('Error! Status = ' + xhr.status);
+                      }
+                    });
+                    console.log($("#changeForm").serialize());
+                  }
+                });
+
+                $("#exampleModal").modal('show');
+              },
+              error: function(xhr, textStatus, errorThrown) {
+                alert('Error! Status = ' + xhr.status);
+              }
+            });
+
+          }
+          function deleteUser(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "DELETE",
+                url: "/api/order/" + target['id'],
+                dataType: 'json',
+                success: (response) => { submitCallback(t, response); },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+          function finalizeOrder(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "POST",
+                url: "/api/order/finalize/" + target['id'],
+                dataType: 'json',
+                success: (response) => { submitCallback(t, response); },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+
+
+          columns = JSON.parse(/*[[${args1}]]*/);
+          const $orderItems = $('#orderItemsTable');
+          const orderItemsTable = $orderItems.DataTable({
+            "pageLength": 15,
+            "lengthChange": false,
+            "searching": false,
+            "select": true,
+            "ajax": {
+              url: "/api/orderItem",
+              type: "GET",
+              dataSrc: function (json) {
+                return json.data;
+              }
+            },
+            "columns": columns,
+            dom: "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+            buttons: [
+              "btnCopy", "btnExcel", "btnPDF", "btnPrint"
+            ]
+          });
+
+          orderItemsTable.on( 'select.dt deselect.dt draw.dt', function ( e, dt, type, indexes ) {
+            orderItemsTable.buttons( 1, ['.edit', '.delete'] ).enable(
+                    orderItemsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+          } );
+
+          new $.fn.dataTable.Buttons( orderItemsTable, {
+            buttons: [
+              { text: "Add", className: "btn btn-primary", action: function(e, dt, node, action) {getOrderItemAddForm(dt);} },
+              { text: "Edit", className: "btn btn-primary ml-1 edit", action: function(e, dt, node, action) {getOrderItemUpdateForm(dt);}, attr: {disabled: true} },
+              { text: "Delete", className: "btn btn-primary ml-1 delete", action: function(e, dt, node, action) {deleteOrderItem(dt);}, attr: {disabled: true} }
+            ]
+          } );
+
+          orderItemsTable.buttons( 1, null ).container().prependTo(
+                  $(orderItemsTable.table().container()).find(".dataTables_crud_buttons")
+          );
+
+          function getOrderItemUpdateForm(t) {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "GET",
+                url: "/orderItem/update/" + target['id'],
+                dataType: 'json',
+                success: function(response) {
+                  if(response.redirect) {
+                    window.location.href = response.redirect;
+                    return;
+                  }
+
+                  $("#modal").html(response.data);
+
+                  $("#changeForm").validate({
+                    errorClass: "has-error",
+                    validClass: "has-success",
+                    rules: {
+                      date: {
+                        required: true
+                      },
+                      customerId: {
+                        required: true,
+                        digits: true
+                      }
+                    },
+                    highlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                    },
+                    unhighlight: function(element, errorClass, validClass) {
+                      $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                    },
+                    submitHandler: function (form) {
+                      const dataToSend = $("#changeForm").serialize();
+                      $.ajax({
+                        type: "PUT",
+                        url: "/api/orderItem",
+                        data: dataToSend,
+                        dataType: 'json',
+                        success: (response) => { submitCallback(ordersTable, response); },
+                        error: function(xhr, textStatus, errorThrown) {
+                          alert('Error! Status = ' + xhr.status);
+                        }
+                      });
+                      console.log($("#changeForm").serialize());
+                    }
+                  });
+
+                  $("#exampleModal").modal();
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+          function getOrderItemAddForm(t) {
+            let target = ordersTable.rows( { selected: true } );
+            if(!target || !target.data()[0]) {
+              return;
+            }
+
+            target = target.data()[0];
+            $.ajax({
+              type: "GET",
+              url: "/orderItem/add/" + target['id'],
+              dataType: 'json',
+              success: function(response) {
+                if(response.redirect) {
+                  window.location.href = response.redirect;
+                  return;
+                }
+
+                $("#modal").html(response.data);
+
+                $("#changeForm").validate({
+                  errorClass: "has-error",
+                  validClass: "has-success",
+                  rules: {
+                    date: {
+                      required: true
+                    },
+                    customerId: {
+                      required: true,
+                      digits: true
+                    }
+                  },
+                  highlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                  },
+                  unhighlight: function(element, errorClass, validClass) {
+                    $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                  },
+                  submitHandler: function (form) {
+                    const dataToSend = $("#changeForm").serialize();
+                    $.ajax({
+                      type: "POST",
+                      url: "/api/orderItem",
+                      data: dataToSend,
+                      dataType: 'json',
+                      success: (response) => { submitCallback(ordersTable, response); },
+                      error: function(xhr, textStatus, errorThrown) {
+                        alert('Error! Status = ' + xhr.status);
+                      }
+                    });
+                    console.log($("#changeForm").serialize());
+                  }
+                });
+
+                $("#exampleModal").modal();
+              },
+              error: function(xhr, textStatus, errorThrown) {
+                alert('Error! Status = ' + xhr.status);
+              }
+            });
+
+          }
+          function deleteOrderItem(t)  {
+            let target = t.rows({selected: true});
+            if(target && target.data()[0]) {
+              target = target.data()[0];
+              $.ajax({
+                type: "DELETE",
+                url: "/api/orderItem/" + target['id'],
+                dataType: 'json',
+                success: (response) => { submitCallback(ordersTable, response); },
+                error: function(xhr, textStatus, errorThrown) {
+                  alert('Error! Status = ' + xhr.status);
+                }
+              });
+            }
+          }
+        });
+      /*]]>*/
+    </script>
+  </div>
+</html>

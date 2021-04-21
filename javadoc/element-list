@@ -1,0 +1,14 @@
+org.alexk
+org.alexk.businessLogic
+org.alexk.businessLogic.validators
+org.alexk.connection
+org.alexk.dao
+org.alexk.exceptions
+org.alexk.models
+org.alexk.models.enums
+org.alexk.models.misc
+org.alexk.models.viewmodels
+org.alexk.presentation
+org.alexk.presentation.api
+org.alexk.utils
+org.example.PT2021_30223_Kovacs_Alex_Assignment_3
